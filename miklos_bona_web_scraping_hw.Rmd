@@ -1,0 +1,119 @@
+---
+title: "Web scraping - Individual assignment"
+author: "Miklos Bona"
+date: "11/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages('rvest')
+install.packages('data.table')
+
+library(rvest)
+library(data.table)
+
+```
+
+```{r url, eval=TRUE}
+my_page <- 'http://www.zsiday.hu/blog'
+t <- read_html(my_page)
+#check if it has the data that we want
+write_html(t, 't.html')
+
+```
+
+```{r collect_data, eval=TRUE}
+# get titles
+my_titles <- 
+  t %>%
+  html_nodes('.views-field-title a')%>%
+  html_text()
+
+# get sumaries
+my_summary <- 
+  t %>%
+  html_nodes('#block-citadella2-content p:nth-child(1)')%>%
+  html_text()
+
+# get dates
+my_date <- 
+  t %>%
+  html_nodes('.datetime')%>%
+  html_text()
+
+# get links
+my_links <- 
+  paste0('http://www.zsiday.hu/blog',
+         t %>%
+           html_nodes('.views-field-view-node a')%>%
+           html_attr('href'))
+
+```
+
+```{r dataframe, eval=TRUE}
+
+first_page <- data.frame('title'   = my_titles, 
+                'summary' = my_summary,
+                'date'    = my_date, 
+                'link'    = my_links )
+
+```
+
+
+```{r function_to_get_data, eval=TRUE}
+get_info_of_zsiday_blog  <- function(my_page) {
+
+# set URL
+  t <- read_html(my_page)
+  write_html(t, 't.html')
+
+# get titles
+  my_titles <- 
+    t %>%
+    html_nodes('.views-field-title a')%>%
+    html_text()
+
+# get sumaries
+  my_summary <- 
+    t %>%
+    html_nodes('#block-citadella2-content p:nth-child(1)')%>%
+    html_text()
+
+# get dates
+  my_date <- 
+    t %>%
+    html_nodes('.datetime')%>%
+    html_text()
+
+# get links
+  my_links <- 
+    paste0('http://www.zsiday.hu/blog',
+    t %>%
+    html_nodes('.views-field-view-node a')%>%
+    html_attr('href'))
+  
+  return((data.frame('title'   = my_titles, 
+                     'summary' = my_summary,
+                     'date'    = my_date, 
+                     'link'    = my_links )))
+}
+```
+
+```{r function_update, eval=TRUE}
+
+one_page <- get_info_of_zsiday_blog('http://www.zsiday.hu/blog?destination=/&_exception_statuscode=404&page=1')
+
+jump_page <- seq(from = 1, to = 5, by = 1)
+
+my_urls <- paste0('http://www.zsiday.hu/blog?destination=/&_exception_statuscode=404&page=',jump_page)
+my_urls
+
+```
+
+```{r collect_multiple_sheets, eval=TRUE}
+one_page <- lapply(my_urls, get_info_of_zsiday_blog)
+res_df <- rbindlist(one_page)
+res_df
+```
+
