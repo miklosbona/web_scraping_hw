@@ -1,0 +1,75 @@
+---
+title: "Web scraping group asg"
+author: "Miklos Bona & Aytaj Ahmedova"
+date: "12/3/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+library(rvest)
+library(tidyverse)
+library(data.table)
+library(rvest)
+```
+
+###### __Instructions:__
+
+1) Scrape Forbes Top 2000 webpage (https://www.forbes.com/global2000/list/) 
+2) Get historical data on companies as long as you can find it. 
+3) Select a year and open all the company and save more info of them. 
+4) (Optional) Make a racing bar charts of it with https://app.flourish.studio . (optional) help for old data: http://stats.areppim.com/listes/list_billionairesx99xwor.htm check the url change
+
+```{r task_1, eval=TRUE}
+my_page <- 'https://www.forbes.com/global2000/list/'
+t <- read_html(my_page)
+#check if it has the data that we want
+write_html(t, 't.html')
+
+top_2000 <- fromJSON('https://www.forbes.com/ajax/list/data?year=2018&uri=billionaires&type=person')
+
+t <- read_html('https://www.forbes.com/global2000/list/')
+
+forbes <- fromJSON('https://www.forbes.com/ajax/list/data?year=2019&uri=global2000&type=organization')
+
+# sequence of years
+jump_year <- seq(from = 2011, to = 2019, by = 1)
+my_urls <- paste0('https://www.forbes.com/ajax/list/data?year=',jump_year,'&uri=global2000&type=organization')
+my_urls
+
+# collect multiple years
+
+
+B <- length(my_urls)
+
+get_info_of_forbes  <- function(my_year) {
+  my_url <- paste0('https://www.forbes.com/ajax/list/data?year=',my_year,'&uri=global2000&type=organization')
+  df <- data.table(fromJSON(my_url))
+  df$year <- my_year
+  print(my_year)
+  return(df)
+  }
+
+one_page <- lapply(jump_year, get_info_of_forbes)
+res_df <- rbindlist(one_page)
+res_df
+
+res_df2 <- res_df %>% 
+  select(name, 
+         industry, 
+         country, 
+         year, 
+         revenue) %>% # if you want to use another metric, you can replace revenue with e.g. profits
+  spread(year, 
+         revenue)
+
+(res_df2)
+
+write.csv(res_df2, file = '/Users/bonamiki/web_scraping/res_df2.csv')
+
+getwd()
+
+```
+
